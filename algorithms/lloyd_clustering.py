@@ -5,6 +5,8 @@ import random
 from math import sqrt
 import ast
 
+# TODO: make possible for n-dimensional data instead of 2D data
+
 
 def lloyd_algorithm(data: str, k: int, k_plus_plus_init: bool = False) -> set[tuple[float, float]]:
     """
