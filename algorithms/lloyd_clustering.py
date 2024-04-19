@@ -1,10 +1,12 @@
 # https://dodona.be/nl/courses/3363/series/36091/activities/207273748/#
-# Date: 14/04/24
-# Description: Lloyd's clustering algorithm
+# Date: 17/04/24
+# Description: Lloyd's clustering algorithm module
 import random
 from math import sqrt
 import ast
 import importlib.util
+
+import dask.distributed
 import numpy as np
 
 
@@ -33,8 +35,9 @@ def lloyd_algorithm(data: str, k: int, k_plus_plus_init: bool = False, variant: 
     # Run the desired variant of the k-means algorithm
     if variant == 1:
         return _k_means_base(points, initial_centers)
-
-    return _k_means_numpy(np.array(points), np.array(initial_centers))
+    elif variant == 2:
+        return _k_means_numpy(np.array(points), np.array(initial_centers))
+    return _k_means_dask(np.array(points), np.array(initial_centers))
 
 
 def _k_means_plus_plus(data: list[tuple[float, ...]], k: int) -> list[tuple[float, ...]]:
@@ -136,11 +139,31 @@ def _k_means_numpy(data: np.ndarray, initial_centers: np.ndarray) -> set[tuple[f
     return set(tuple(center) for center in centers)
 
 
-def _k_means_dask(data: np.ndarray, initial_centers: np.ndarray) -> set[tuple[float, ...]]:
-    """
-    Implementation of the k-means algorithm using dask for improved performance on large datasets.
-    :param data: List of tuples with the coordinates of the points.
-    :param initial_centers: List of tuples with the coordinates of the initial centroids.
-    :return: A set of tuples with the coordinates of the centroids.
-    """
-    pass
+if importlib.util.find_spec("dask") is not None:
+    from dask.distributed import Client
+
+
+    def _k_means_dask(data: np.ndarray, initial_centers: np.ndarray, client: Client) -> set[tuple[float, ...]]:
+        """
+        Implementation of the k-means algorithm using dask for improved performance on large datasets.
+        :param data: List of tuples with the coordinates of the points.
+        :param initial_centers: List of tuples with the coordinates of the initial centroids.
+        :return: A set of tuples with the coordinates of the centroids.
+        """
+
+        # Initialize the centers
+        prev_centers: np.ndarray = np.empty(0)
+        centers = initial_centers
+
+        # run the k-means algorithm
+        while not np.array_equal(prev_centers, centers):
+            # Centers to clusters
+            distances = np.sqrt(((data - centers[:, np.newaxis]) ** 2).sum(axis=2))
+            clusters = np.argmin(distances, axis=0)
+
+            # Clusters to centers
+            prev_centers = centers
+            futures = [client.submit(np.mean, data[clusters == i], axis=0) for i in range(len(centers))]
+            centers = np.array(client.gather(futures))
+
+        return set(tuple(center) for center in centers)
