@@ -6,7 +6,6 @@ from math import sqrt
 import ast
 import importlib.util
 
-import dask.distributed
 import numpy as np
 
 
@@ -35,7 +34,7 @@ def lloyd_algorithm(data: str, k: int, k_plus_plus_init: bool = False, variant: 
     # Run the desired variant of the k-means algorithm
     if variant == 1:
         return _k_means_base(points, initial_centers)
-    elif variant == 2:
+    if variant == 2:
         return _k_means_numpy(np.array(points), np.array(initial_centers))
     return _k_means_dask(np.array(points), np.array(initial_centers))
 
@@ -141,9 +140,10 @@ def _k_means_numpy(data: np.ndarray, initial_centers: np.ndarray) -> set[tuple[f
 
 if importlib.util.find_spec("dask") is not None:
     from dask.distributed import Client
+    client = Client()
 
 
-    def _k_means_dask(data: np.ndarray, initial_centers: np.ndarray, client: Client) -> set[tuple[float, ...]]:
+    def _k_means_dask(data: np.ndarray, initial_centers: np.ndarray) -> set[tuple[float, ...]]:
         """
         Implementation of the k-means algorithm using dask for improved performance on large datasets.
         :param data: List of tuples with the coordinates of the points.
