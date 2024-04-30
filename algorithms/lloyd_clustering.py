@@ -227,4 +227,4 @@ if __name__ == "__main__":
 
     doctest.testmod()
 
-    print(timeit.timeit(lambda: lloyd_algorithm("../data/data_04.txt", 5, False, 1), number=1))
+    print(timeit.timeit(lambda: lloyd_algorithm("../data/data_04.txt", 5, True, 2), number=1))
