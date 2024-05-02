@@ -33,21 +33,21 @@ import numpy as np
 
 # Generate data for different center amounts
 for center_amount in range(2, 11):
-    X, y = make_blobs(n_samples=1000, centers=center_amount, n_features=2, random_state=42)
+    X, y = make_blobs(n_samples=100000, centers=center_amount, n_features=3, random_state=42)
     X = StandardScaler().fit_transform(X)
     with open(f"{os.environ['VSC_DATA']}/data/data_center_{center_amount}.txt", 'w') as file:
         file.write(str([tuple(x) for x in X.tolist()]))
 
 # Generate data for different dimension amounts
 for dimension_amount in range(2, 11):
-    X, y = make_blobs(n_samples=1000, centers=5, n_features=dimension_amount, random_state=42)
+    X, y = make_blobs(n_samples=100000, centers=5, n_features=dimension_amount, random_state=42)
     X = StandardScaler().fit_transform(X)
     with open(f"{os.environ['VSC_DATA']}/data/data_dimension_{dimension_amount}.txt", 'w') as file:
         file.write(str([tuple(x) for x in X.tolist()]))
 
 # Generate data for different sample amounts
-for sample_amount in range(1000, 10001, 1000):
-    X, y = make_blobs(n_samples=sample_amount, centers=5, n_features=2, random_state=42)
+for sample_amount in range(100000, 1000001, 100000):
+    X, y = make_blobs(n_samples=sample_amount, centers=5, n_features=3, random_state=42)
     X = StandardScaler().fit_transform(X)
     with open(f"{os.environ['VSC_DATA']}/data/data_sample_{sample_amount}.txt", 'w') as file:
         file.write(str([tuple(x) for x in X.tolist()]))
@@ -148,12 +148,15 @@ def time_benchmark():
         dask_times = []
 
         # Iterate 100 times to check means and error margin.
-        for i in range(0, 100):
+        for i in range(0, 10):
             initial_centers = lloyd.k_means_plus_plus(points, center_amount)
             # Time the implementations
             base_times.append(timeit.timeit(lambda: lloyd.k_means_base(points, initial_centers), number=1))
-            numpy_times.append(timeit.timeit(lambda: lloyd.k_means_numpy(np.array(points), np.array(initial_centers)), number=1))
-            dask_times.append(timeit.timeit(lambda: lloyd.k_means_dask(da.from_array(points, chunks=(len(points) // 4, len(points[0]))), np.array(initial_centers)), number=1))
+            numpy_times.append(
+                timeit.timeit(lambda: lloyd.k_means_numpy(np.array(points), np.array(initial_centers)), number=1))
+            dask_times.append(timeit.timeit(
+                lambda: lloyd.k_means_dask(da.from_array(points, chunks=(len(points) // 4, len(points[0]))),
+                                           np.array(initial_centers)), number=1))
 
             log.info(f"saving results for center amount: {center_amount}, iteration: {i}")
         # Save the results to the file
@@ -178,13 +181,16 @@ def time_benchmark():
         dask_times = []
 
         # Iterate 100 times to check means and error margin.
-        for i in range(0, 100):
+        for i in range(0, 10):
             initial_centers = lloyd.k_means_plus_plus(points, 5)
 
             # Time the implementations
             base_times.append(timeit.timeit(lambda: lloyd.k_means_base(points, initial_centers), number=1))
-            numpy_times.append(timeit.timeit(lambda: lloyd.k_means_numpy(np.array(points), np.array(initial_centers)), number=1))
-            dask_times.append(timeit.timeit(lambda: lloyd.k_means_dask(da.from_array(points, chunks=(len(points) // 4, len(points[0]))), np.array(initial_centers)), number=1))
+            numpy_times.append(
+                timeit.timeit(lambda: lloyd.k_means_numpy(np.array(points), np.array(initial_centers)), number=1))
+            dask_times.append(timeit.timeit(
+                lambda: lloyd.k_means_dask(da.from_array(points, chunks=(len(points) // 4, len(points[0]))),
+                                           np.array(initial_centers)), number=1))
 
             log.info(f"saving results for dimension amount: {dimensions}, iteration: {i}")
         # Save the results to the file
@@ -197,7 +203,7 @@ def time_benchmark():
 
     log.info('Finished dimension amount benchmark')
 
-    for sample_amount in range(1000, 10001, 1000):
+    for sample_amount in range(100000, 1000001, 100000):
         # Read the data from the file
         with open(f"{os.environ['VSC_DATA']}/data/data_sample_{sample_amount}.txt", encoding="utf-8") as file:
             filecontent = file.read()
@@ -208,14 +214,17 @@ def time_benchmark():
         numpy_times = []
         dask_times = []
 
-        # Iterate 100 times to check means and error margin.
-        for i in range(0, 100):
+        # Iterate 10 times to check means and error margin.
+        for i in range(0, 10):
             initial_centers = lloyd.k_means_plus_plus(points, 5)
 
             # Time the implementations
             base_times.append(timeit.timeit(lambda: lloyd.k_means_base(points, initial_centers), number=1))
-            numpy_times.append(timeit.timeit(lambda: lloyd.k_means_numpy(np.array(points), np.array(initial_centers)), number=1))
-            dask_times.append(timeit.timeit(lambda: lloyd.k_means_dask(da.from_array(points, chunks=(len(points) // 4, len(points[0]))), np.array(initial_centers)), number=1))
+            numpy_times.append(
+                timeit.timeit(lambda: lloyd.k_means_numpy(np.array(points), np.array(initial_centers)), number=1))
+            dask_times.append(timeit.timeit(
+                lambda: lloyd.k_means_dask(da.from_array(points, chunks=(len(points) // 4, len(points[0]))),
+                                           np.array(initial_centers)), number=1))
 
             log.info(f"saving results for sample amount: {sample_amount}, iteration: {i}")
         # Save the results to the file
@@ -258,18 +267,21 @@ def mem_benchmark():
             points: list[tuple[float, ...]] = list(ast.literal_eval(filecontent))
 
         # Initialize lists to store the memory usage
-        base_mem = ()
-        numpy_mem = ()
-        dask_mem = ()
+        base_mem = []
+        numpy_mem = []
+        dask_mem = []
 
         # Iterate 100 times to check means and error margin.
-        for i in range(0, 100):
+        for i in range(0, 10):
             initial_centers = lloyd.k_means_plus_plus(points, center_amount)
 
             # Memory the implementations
-            base_mem.append(memory_usage((lloyd.k_means_base, (points, initial_centers))))
-            numpy_mem.append(memory_usage((lloyd.k_means_numpy, (np.array(points), initial_centers))))
-            dask_mem.append(memory_usage((lloyd.k_means_dask, (da.array(points), initial_centers)), multiprocess=True))
+            base_mem.append(memory_usage((lloyd.k_means_base, (points, initial_centers)), max_usage=True))
+            numpy_mem.append(
+                memory_usage((lloyd.k_means_numpy, (np.array(points), np.array(initial_centers))), max_usage=True))
+            dask_mem.append(memory_usage((lloyd.k_means_dask, (
+                da.from_array(points, chunks=(len(points) // 4, len(points[0]))), np.array(initial_centers))),
+                                         multiprocess=True, max_usage=True))
 
             log.info(f"saving results for center amount: {center_amount}, iteration: {i}")
         # Save the results to the file
@@ -289,18 +301,20 @@ def mem_benchmark():
             points: list[tuple[float, ...]] = list(ast.literal_eval(filecontent))
 
         # Initialize lists to store the memory usage
-        base_mem = ()
-        numpy_mem = ()
-        dask_mem = ()
+        base_mem = []
+        numpy_mem = []
+        dask_mem = []
 
         # Iterate 100 times to check means and error margin.
-        for i in range(0, 100):
+        for i in range(0, 10):
             initial_centers = lloyd.k_means_plus_plus(points, 5)
 
             # Memory the implementations
-            base_mem.append(memory_usage((lloyd.k_means_base, (points, initial_centers))))
-            numpy_mem.append(memory_usage((lloyd.k_means_numpy, (np.array(points), initial_centers))))
-            dask_mem.append(memory_usage((lloyd.k_means_dask, (da.array(points), initial_centers)), multiprocess=True))
+            base_mem.append(memory_usage((lloyd.k_means_base, (points, initial_centers)),max_usage=True))
+            numpy_mem.append(memory_usage((lloyd.k_means_numpy, (np.array(points), np.array(initial_centers))),max_usage=True))
+            dask_mem.append(memory_usage((lloyd.k_means_dask, (
+                da.from_array(points, chunks=(len(points) // 4, len(points[0]))), np.array(initial_centers))),
+                                         multiprocess=True, max_usage=True))
 
             log.info(f"saving results for dimension amount: {dimensions}, iteration: {i}")
         # Save the results to the file
@@ -313,25 +327,27 @@ def mem_benchmark():
 
     log.info('Finished dimension amount benchmark')
 
-    for sample_amount in range(1000, 10001, 1000):
+    for sample_amount in range(100000, 1000001, 100000):
         # Read the data from the file
         with open(f"{os.environ['VSC_DATA']}/data/data_sample_{sample_amount}.txt", encoding="utf-8") as file:
             filecontent = file.read()
             points: list[tuple[float, ...]] = list(ast.literal_eval(filecontent))
 
         # Initialize lists to store the memory usage
-        base_mem = ()
-        numpy_mem = ()
-        dask_mem = ()
+        base_mem = []
+        numpy_mem = []
+        dask_mem = []
 
-        # Iterate 100 times to check means and error margin.
-        for i in range(0, 100):
+        # Iterate 10 times to check means and error margin.
+        for i in range(0, 10):
             initial_centers = lloyd.k_means_plus_plus(points, 5)
 
             # Memory the implementations
-            base_mem.append(memory_usage((lloyd.k_means_base, (points, initial_centers))))
-            numpy_mem.append(memory_usage((lloyd.k_means_numpy, (np.array(points), initial_centers))))
-            dask_mem.append(memory_usage((lloyd.k_means_dask, (da.array(points), initial_centers)), multiprocess=True))
+            base_mem.append(memory_usage((lloyd.k_means_base, (points, initial_centers)),max_usage=True))
+            numpy_mem.append(memory_usage((lloyd.k_means_numpy, (np.array(points), np.array(initial_centers))),max_usage=True))
+            dask_mem.append(memory_usage((lloyd.k_means_dask, (
+                da.from_array(points, chunks=(len(points) // 4, len(points[0]))), np.array(initial_centers))),
+                                         multiprocess=True,max_usage=True))
 
             log.info(f"saving results for sample amount: {sample_amount}, iteration: {i}")
         # Save the results to the file
